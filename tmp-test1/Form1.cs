@@ -1,6 +1,7 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
 using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace tmp_test1
@@ -27,12 +28,30 @@ namespace tmp_test1
                 {
                     var image = new Image<Bgr, byte>(fileDialog.FileName);
                     pictureBox1.Image = image.ToBitmap();
+                    statusLabel.ForeColor = Color.Green;
+                    statusLabel.Text = "Image has been loaded";
+
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+                statusLabel.BackColor = Color.Red;
+                statusLabel.Text = "! Error while opening image";
             }
         }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            System.Environment.Exit(0);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            pictureBox1.Image = null;
+            statusLabel.ForeColor = Color.Black;
+            statusLabel.Text = "Image has been removed";
+        }
+
     }
 }
