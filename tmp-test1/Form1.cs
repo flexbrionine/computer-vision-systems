@@ -15,13 +15,31 @@ namespace tmp_test1
         Image<Bgr, byte> image2;
         Image<Bgr, byte> image1_scope;
         Image<Bgr, byte> image2_scope;
+        Image<Bgr, byte> image_lut;
+
+        byte[] lutTab = new byte[256];
+
+        private enum LutOper
+        {
+            IDENTITY,
+            INVERT,
+            BRIGHTNESS,
+            BIN_P1,
+            BIN_P1_P2,
+            CONTRAST
+        }
+        LutOper chosenOperation = LutOper.IDENTITY;
+
         public Form1()
         {
             InitializeComponent();
+
             image1 = new Image<Bgr, byte>(320, 230);
             image2 = new Image<Bgr, byte>(320, 230);
             image1_scope = new Image<Bgr, byte>(320, 230);
             image2_scope = new Image<Bgr, byte>(320, 230);
+            image_lut = new Image<Bgr, byte>(pictureBox_lut.Size);
+
             try
             {
                 cam = new VideoCapture(0);
@@ -73,10 +91,10 @@ namespace tmp_test1
         private void button1_Click(object sender, EventArgs e)
         {
             pictureBox1.Image = null;
+            pictureBox2.Image = null;
             statusLabel.ForeColor = Color.Black;
-            statusLabel.Text = "Image has been removed";
+            statusLabel.Text = "Images have been removed";
         }
-
 
         private void button_grafika_Click(object sender, EventArgs e)
         {
@@ -284,7 +302,7 @@ namespace tmp_test1
         private void analyseScope(Image<Bgr, byte> src, Image<Bgr, byte> dst)
         {
             int scopeY = Convert.ToInt32(textBox_y.Text);
-            int scopeHeight = dst.Height;
+            int scopeHeight = pictureBox1_scope.Height;
 
             double scaleY = ((scopeHeight - 1) / 255.0);
 
@@ -292,33 +310,148 @@ namespace tmp_test1
             byte[,,] srcData = src.Data;
             byte[,,] dstData = dst.Data;
 
-            for (int x = 0; x < dst.Width; x++)
+            int calcY;
+            for (int x = 0; x < src.Width; x++)
             {
-                int calcY;
                 calcY = (int)(srcData[scopeY, x, 0] * scaleY);
                 calcY = (scopeHeight - 1) - calcY;
-                dstData[scopeY, x, 0] = 255;
+                dstData[calcY, x, 0] = (byte)calcY;
 
                 calcY = (int)(srcData[scopeY, x, 1] * scaleY);
                 calcY = (scopeHeight - 1) - calcY;
-                dstData[scopeY, x, 1] = 255;
+                dstData[calcY, x, 1] = (byte)calcY;
 
                 calcY = (int)(srcData[scopeY, x, 2] * scaleY);
                 calcY = (scopeHeight - 1) - calcY;
-                dstData[scopeY, x, 2] = 255;
+                dstData[calcY, x, 2] = (byte)calcY;
             }
         }
 
         private void button_wykresLinii_Click(object sender, EventArgs e)
         {
             analyseScope(image1, image2);
-            pictureBox1_scope.Image = image2.ToBitmap();
+            pictureBox1_scope.Image = image2.Bitmap;
         }
 
         private void button2_wykresLinii_Click(object sender, EventArgs e)
         {
             analyseScope(image2, image1);
-            pictureBox2_scope.Image = image1.ToBitmap();
+            pictureBox2_scope.Image = image1.Bitmap;
+        }
+
+        private void radioButton_selection_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton_tozsamosc.Checked)
+            {
+                chosenOperation = LutOper.IDENTITY;
+            }
+            else if (radioButton_negatyw.Checked)
+            {
+                chosenOperation = LutOper.INVERT;
+            }
+            else if (radioButton_jasnoscP1.Checked)
+            {
+                chosenOperation = LutOper.BRIGHTNESS;
+            }
+            else if (radioButton_progowanieP1P2.Checked)
+            {
+                chosenOperation = LutOper.BIN_P1_P2;
+            }
+            else if (radioButton_progowanieP1.Checked)
+            {
+                chosenOperation = LutOper.BIN_P1;
+            }
+            else if (radioButton_kontrast.Checked)
+            {
+                chosenOperation = LutOper.CONTRAST;
+            }
+        }
+
+        private void button_init_Click(object sender, EventArgs e)
+        {
+            initLutTable();
+            drawLutTable();
+        }
+
+        private void initLutTable()
+        {
+            switch (chosenOperation)
+            {
+                case LutOper.IDENTITY:
+                    {
+                        for (global::System.Int32 i = 0; i < 256; i++)
+                        {
+                            lutTab[i] = (byte)i;
+                        }
+                    }
+                    break;
+                case LutOper.INVERT:
+                    {
+                        for (global::System.Int32 i = 0; i < 256; i++)
+                        {
+                            lutTab[i] = (byte)(256-i);
+                        }
+                    }
+                    break;
+                case LutOper.BRIGHTNESS:
+                    {
+                        int brithness = (int)numericUpDown_P1.Value;
+                        for (global::System.Int32 i = 0; i < 256; i++)
+                        {
+                            if (i + brithness > 256)
+                            {
+                                lutTab[i] = 255;
+                            }
+                            else
+                            {
+                                lutTab[i] = (byte)(i + brithness);
+                            }
+                        }
+                    }
+                    break;
+                case LutOper.BIN_P1:
+                    {
+
+                    }
+                    break;
+                case LutOper.BIN_P1_P2:
+                    {
+
+                    }
+                    break;
+                case LutOper.CONTRAST:
+                    {
+
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void drawLutTable()
+        {
+            double sX, sY;
+            sX = (pictureBox_lut.Width - 1) / 255.0;
+            sY = (pictureBox_lut.Height - 1) / 255.0;
+            int height = pictureBox_lut.Height - 1;
+            image_lut.SetValue(new Bgr(255, 255, 255));
+
+            byte[,,] data = image_lut.Data;
+            for (int x = 0; x < lutTab.Length; x++)
+            {
+                int Y = (int)(height - lutTab[x] * sY);
+                int X = (int)(x * sX);
+                data[Y,X,0] = 0;
+                data[Y,X,1] = 0;
+                data[Y,X,2] = 0;
+            }
+            pictureBox_lut.Image = image_lut.Bitmap;
+        }
+
+        private void numericUpDown_P1_ValueChanged(object sender, EventArgs e)
+        {
+            button_init_Click(sender, e);
         }
     }
 }
